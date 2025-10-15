@@ -1,0 +1,69 @@
+#cloud-config
+# Hetzner Cloud-Init Configuration for pubdev
+# This script automatically sets up your server on first boot
+# Copy and paste this entire file into the "Cloud config" text area in Hetzner
+
+# Update packages on first boot
+package_update: true
+package_upgrade: true
+
+# Install required packages
+packages:
+  - nginx
+  - git
+  - curl
+  - ufw
+  - fail2ban
+  - htop
+
+# Create deploy user with sudo privileges
+users:
+  - name: deploy
+    groups: sudo
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDR9M/Tu1ybffQpd/bqQWKaQSdUJPBG5IL5FiJ+Ho+Wq crow.commerce@gmail.com
+
+# Configure firewall
+runcmd:
+  # Update system
+  - apt-get update
+  - apt-get upgrade -y
+  
+  # Install Node.js 20.x LTS
+  - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+  - apt-get install -y nodejs
+  
+  # Install pnpm globally
+  - npm install -g pnpm
+  
+  # Install PM2 globally
+  - npm install -g pm2
+  
+  # Configure UFW firewall
+  - ufw --force enable
+  - ufw allow OpenSSH
+  - ufw allow 80/tcp
+  - ufw allow 443/tcp
+  
+  # Start and enable services
+  - systemctl enable nginx
+  - systemctl start nginx
+  - systemctl enable fail2ban
+  - systemctl start fail2ban
+  
+  # Create application directory
+  - mkdir -p /home/deploy/pubdev
+  - chown -R deploy:deploy /home/deploy
+  
+  # Create logs directory
+  - mkdir -p /home/deploy/pubdev/logs
+  - chown -R deploy:deploy /home/deploy/pubdev/logs
+  
+  # Clean up
+  - apt-get autoremove -y
+  - apt-get autoclean
+
+final_message: "pubdev server setup complete! Connect with: ssh deploy@your-server-ip"
+

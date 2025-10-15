@@ -1,0 +1,51 @@
+{
+  "name": "pubdev",
+  "version": "0.2.0",
+  "description": "Automatic social media content generation for your code releases",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "pubdev": "./bin/pubdev.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "pnpm build"
+  },
+  "keywords": [
+    "social-media",
+    "automation",
+    "content-generation",
+    "twitter",
+    "x",
+    "developer-tools"
+  ],
+  "author": "mCorvus <mcorvus@pubdev.app>",
+  "license": "MIT",
+  "private": false,
+  "homepage": "https://pubdev.app",
+  "dependencies": {
+    "@babel/parser": "^7.26.3",
+    "@babel/traverse": "^7.26.5",
+    "chalk": "^4.1.2",
+    "commander": "^12.1.0",
+    "inquirer": "^8.2.6",
+    "ora": "^5.4.1",
+    "simple-git": "^3.27.0"
+  },
+  "devDependencies": {
+    "@types/babel__traverse": "^7.20.6",
+    "@types/inquirer": "^8.2.10",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
