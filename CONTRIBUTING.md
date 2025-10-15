@@ -63,17 +63,24 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
    cp .env.example .env.local
    ```
 
-3. Set up Supabase:
+3. Copy `pubdev.config.example.js` to `pubdev.config.js` (if testing package):
+   ```bash
+   cp pubdev.config.example.js pubdev.config.js
+   ```
+   
+   ⚠️ **Never commit** `.env.local` or `pubdev.config.js` - they contain sensitive keys!
+
+4. Set up Supabase:
    - Create a Supabase project
    - Run all SQL scripts in `/scripts` folder in order
    - Add your Supabase credentials to `.env.local`
 
-4. Run the development server:
+5. Run the development server:
    ```bash
    pnpm dev
    ```
 
-5. Visit `http://localhost:3000`
+6. Visit `http://localhost:3000`
 
 ### Project Structure
 

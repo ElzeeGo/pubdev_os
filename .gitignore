@@ -77,3 +77,6 @@ pids
 *.tmp
 .cache/
 
+# Pubdev config with sensitive keys
+pubdev.config.js
+

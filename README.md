@@ -87,31 +87,22 @@ CLI tool and SDK that users install in their codebases:
      ```
 
 3. **Environment variables**:
-   Create `.env.local`:
+   Copy `.env.example` to `.env.local` and fill in your credentials:
    ```bash
-   # App
-   NEXT_PUBLIC_APP_URL=http://localhost:3000
-   
-   # Supabase
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-   SUPABASE_SERVICE_ROLE_KEY=your_service_key
-   
-   # AI
-   OPENAI_API_KEY=your_openai_key
-   GEMINI_API_KEY=your_gemini_key
-   
-   # X (Twitter) OAuth 2.0
-   X_CLIENT_ID=your_client_id
-   X_CLIENT_SECRET=your_client_secret
-   X_REDIRECT_URI=http://localhost:3000/api/oauth/x/callback
-   
-   # X OAuth 1.0a (for media upload)
-   X_OAUTH1A_API_KEY=your_api_key
-   X_OAUTH1A_API_SECRET=your_api_secret
+   cp .env.example .env.local
+   # Then edit .env.local with your actual values
    ```
 
-4. **Run development**:
+4. **Configure pubdev package** (optional, for testing self-scan):
+   Copy `pubdev.config.example.js` to `pubdev.config.js` and add your API key:
+   ```bash
+   cp pubdev.config.example.js pubdev.config.js
+   # Then edit pubdev.config.js with your project API key
+   ```
+   
+   > ⚠️ **Security Note**: `pubdev.config.js` is in `.gitignore` and should never be committed!
+
+5. **Run development**:
    ```bash
    # Run main app
    pnpm dev
