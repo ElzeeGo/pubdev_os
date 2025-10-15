@@ -13,7 +13,7 @@ import type { Metadata } from "next"
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://pubdev.app"
 const siteName = "pubdev"
-const siteDescription = "AI-powered content generation platform for X (Twitter). Create engaging tweets, analyze performance, and grow your audience with intelligent automation."
+const siteDescription = "AI-powered content generation platform for X (Twitter). Auto and manual workflows for text, images, and Sora 2 videos."
 
 export const metadata: Metadata = {
   title: {
@@ -127,9 +127,10 @@ export default async function HomePage() {
     },
     featureList: [
       "AI-powered content generation",
+      "Manual content creation and approval",
+      "Sora 2 video generation",
       "Performance analytics",
       "Multi-variant testing",
-      "Audience growth tools",
       "Content scheduling",
       "Engagement insights",
     ],

@@ -41,6 +41,10 @@ export function Features() {
                 <div className="w-1 h-1 rounded-full bg-primary"></div>
                 <span>Hashtag research & suggestions</span>
               </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="w-1 h-1 rounded-full bg-primary"></div>
+                <span>Manual editing and approval workflow</span>
+              </div>
             </div>
           </div>
 
@@ -67,6 +71,10 @@ export function Features() {
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <div className="w-1 h-1 rounded-full bg-primary"></div>
                 <span>Structured content outlines</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="w-1 h-1 rounded-full bg-primary"></div>
+                <span>Manual drafts with versioning</span>
               </div>
             </div>
           </div>
@@ -102,6 +110,10 @@ export function Features() {
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <div className="w-1 h-1 rounded-full bg-purple-400"></div>
                 <span>Multiple aspect ratios</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="w-1 h-1 rounded-full bg-purple-400"></div>
+                <span>Manual prompts and shot list support</span>
               </div>
             </div>
           </div>
