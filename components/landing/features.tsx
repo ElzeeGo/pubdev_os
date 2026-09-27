@@ -97,10 +97,10 @@ export function Features() {
             </div>
             <h3 className="text-lg font-semibold mb-2">
               AI Video Generation
-              <span className="ml-2 text-xs text-purple-400">with Sora 2</span>
+              <span className="ml-2 text-xs text-purple-400">with Seedance 2.5</span>
             </h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Generate professional promotional videos automatically using OpenAI's Sora 2. Perfect for social media announcements.
+              Generate professional promotional videos automatically with ElevenLabs. Perfect for social media announcements.
             </p>
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">

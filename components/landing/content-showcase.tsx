@@ -146,7 +146,7 @@ export function ContentShowcase() {
                     </svg>
                     <span className="text-xs font-medium">AI Video</span>
                   </div>
-                  <div className="text-xs text-muted-foreground mb-2">Sora 2</div>
+                  <div className="text-xs text-muted-foreground mb-2">Seedance 2.5</div>
                   <div className="aspect-video rounded border border-purple-400/30 overflow-hidden">
                     <video 
                       src="https://ckghkfkmjnyfruvqtste.supabase.co/storage/v1/object/public/landing/man_pubdev.mp4"

@@ -1,0 +1,2 @@
+-- Local fixture data is applied by `pnpm db:seed` after the stack is up.
+-- Auth users are created through GoTrue so password hashes stay compatible.

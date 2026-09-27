@@ -3,6 +3,7 @@
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Loader2 } from "lucide-react"
+import { videoModelLabel } from "@/lib/llm/video-models"
 
 interface VideoAsset {
   id: string
@@ -10,7 +11,7 @@ interface VideoAsset {
   url?: string
   status: "queued" | "in_progress" | "completed" | "failed"
   progress?: number
-  model: "sora-2" | "sora-2-pro"
+  model: string
   duration: number
   size: string
   created_at: string
@@ -43,7 +44,7 @@ export function VideoGallery({ videos }: VideoGalleryProps) {
               </video>
               <div className="p-4 space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant="secondary">{video.model}</Badge>
+                  <Badge variant="secondary">{videoModelLabel(video.model)}</Badge>
                   <Badge variant="outline">{video.duration}s</Badge>
                   <Badge variant="outline">{video.size}</Badge>
                 </div>
@@ -58,7 +59,7 @@ export function VideoGallery({ videos }: VideoGalleryProps) {
             <div className="p-6 space-y-3">
               <div className="flex items-center gap-2">
                 <Badge variant="destructive" className="text-sm">❌ Failed</Badge>
-                <Badge variant="outline">{video.model}</Badge>
+                <Badge variant="outline">{videoModelLabel(video.model)}</Badge>
                 <Badge variant="outline">{video.duration}s</Badge>
                 <Badge variant="outline">{video.size}</Badge>
               </div>

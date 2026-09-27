@@ -100,7 +100,7 @@ async function calculateCost(metrics: GenerationMetrics, supabase: any): Promise
     totalCost += imageCost || 0
   }
 
-  // Calculate video generation cost (with size awareness for sora-2-pro)
+  // Calculate video generation cost from the ElevenLabs model price.
   if (metrics.type === "video" || (metrics.type === "both" && metrics.videosGenerated > 0)) {
     // Use size-aware function if video size is provided
     if (metrics.videoSize) {

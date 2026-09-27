@@ -85,7 +85,7 @@ export async function POST(request: Request) {
 
         const video = await createAndPollVideo({
           prompt: videoPrompt,
-          model: videoOptions.model || "sora-2",
+          model: videoOptions.model || "bytedance-seedance-v2.5",
           duration: videoOptions.duration || 5,
           size: videoOptions.size || "1280x720",
           context,

@@ -258,7 +258,7 @@ async function triggerContentGeneration(
       
       // User settings take precedence for video generation
       generateVideos: userSettings.generateVideos ?? projectSettings.generateVideos ?? false,
-      videoModel: userSettings.videoModel || projectSettings.videoModel || "sora-2",
+      videoModel: userSettings.videoModel || projectSettings.videoModel || "bytedance-seedance-v2.5",
       videoDuration: userSettings.videoDuration || projectSettings.videoDuration || 8,
       videoSize: userSettings.videoSize || projectSettings.videoSize || "1280x720",
       videoStyle: userSettings.videoStyle || projectSettings.videoStyle,
@@ -314,7 +314,7 @@ async function triggerContentGeneration(
 
         const video = await createAndPollVideo({
           prompt: videoPrompt,
-          model: settings.videoModel || "sora-2",
+          model: settings.videoModel || "bytedance-seedance-v2.5",
           duration: settings.videoDuration || 8,
           size: settings.videoSize || "1280x720",
           context,

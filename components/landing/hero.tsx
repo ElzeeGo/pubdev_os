@@ -19,7 +19,7 @@ export function Hero() {
 
         <p className="text-xl md:text-2xl text-muted-foreground mb-12 text-balance max-w-3xl mx-auto leading-relaxed">
           Automatically analyze your code, detect new features, and generate engaging <strong className="text-foreground">text, images, and AI videos</strong> for X, LinkedIn, Facebook,
-          Instagram or Reddit. Prefer control? Manually create and edit content in the dashboard—powered by Sora 2 for video.
+          Instagram or Reddit. Prefer control? Manually create and edit content in the dashboard—including AI video.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">

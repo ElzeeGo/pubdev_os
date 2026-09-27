@@ -9,7 +9,7 @@ Install once in your codebase, and let AI generate engaging social media posts a
 - **Full-Stack App**: Next.js app with Supabase backend for managing projects and publishing
 - **NPM Package**: Install `pubdev` in any codebase to enable automatic content generation
 - **AI-Powered**: Uses GPT-5 for text generation and Gemini 2.5 Flash for image generation
-- **Sora 2 Video Generation**: Generate promotional videos with OpenAI Sora 2 directly from drafts
+- **Video Generation**: Generate promotional videos with ElevenLabs (Seedance 2.5 by default, MiniMax H3 Max as the faster option)
 - **Manual Generation**: Manually create and edit text, images, and videos from the dashboard (besides auto-generation)
 - **X (Twitter) Integration**: OAuth 1.0a and 2.0 support for posting tweets with media
 - **Sentry-Style**: Simple install → init → it just works

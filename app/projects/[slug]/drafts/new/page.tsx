@@ -10,6 +10,18 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { InlineLoader } from "@/components/inline-loader"
 import { VideoStyleTemplates } from "@/components/video-style-templates"
+import {
+  DEFAULT_VIDEO_MODEL,
+  formatVideoPrice,
+  resolveVideoAspect,
+  resolveVideoDuration,
+  resolveVideoModel,
+  VIDEO_ASPECT_RATIOS,
+  VIDEO_DURATIONS,
+  VIDEO_MODELS,
+  type VideoAspectRatio,
+  type VideoModelId,
+} from "@/lib/llm/video-models"
 import { useRouter, useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import { ArrowLeft, Plus, X } from "lucide-react"
@@ -27,9 +39,9 @@ export default function NewDraftPage() {
   
   // Video generation options
   const [generateVideo, setGenerateVideo] = useState(false)
-  const [videoModel, setVideoModel] = useState<"sora-2" | "sora-2-pro">("sora-2")
-  const [videoDuration, setVideoDuration] = useState<4 | 8 | 12>(4)
-  const [videoSize, setVideoSize] = useState<"1280x720" | "720x1280" | "1792x1024" | "1024x1792">("1280x720")
+  const [videoModel, setVideoModel] = useState<VideoModelId>(DEFAULT_VIDEO_MODEL)
+  const [videoDuration, setVideoDuration] = useState(5)
+  const [videoSize, setVideoSize] = useState<VideoAspectRatio>("16:9")
   const [videoStyle, setVideoStyle] = useState("Style: modern, clean UI, focus on clarity. Shots: intro logo bumper (0–2s), feature overview (2–8s), step-by-step demo (8–22s), closing CTA (22–30s). Camera: slow dolly-ins and parallax pans; keep motion subtle and continuous. Edits: smooth match cuts and 8–12 frame crossfades; occasional whip-pan transition between sections. Lighting: soft three-point lighting; key at 45°, soft fill, gentle rim; neutral HDRI reflections for UI mockups. Color: cool neutrals with one accent color; mild filmic contrast. Graphics: tasteful UI overlays and callouts with short labels (<6 words). Text: title safe area; high contrast; font 'Inter' or similar. Music/SFX: light tech ambient bed; soft UI click and whoosh cues; use J/L-cuts for continuity. Framing: 16:9 4K (3840×2160), 24 fps, 180° shutter look (natural motion blur). Avoid: jittery zooms, harsh spotlights, fast cuts under 8 frames, busy backgrounds.")
   
   const router = useRouter()
@@ -200,7 +212,7 @@ export default function NewDraftPage() {
                         className="h-4 w-4 rounded border-gray-300"
                       />
                       <Label htmlFor="generateVideo" className="cursor-pointer font-medium">
-                        Generate AI Video with Sora 2
+                        Generate AI video
                       </Label>
                     </div>
 
@@ -211,18 +223,18 @@ export default function NewDraftPage() {
                           <select
                             id="videoModel"
                             value={videoModel}
-                            onChange={(e) => setVideoModel(e.target.value as "sora-2" | "sora-2-pro")}
+                            onChange={(e) => {
+                              const nextModel = resolveVideoModel(e.target.value)
+                              setVideoModel(nextModel)
+                              setVideoDuration(resolveVideoDuration(nextModel, videoDuration))
+                            }}
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                           >
-                            <option value="sora-2">Sora 2 (Fast, Good Quality)</option>
-                            <option value="sora-2-pro">Sora 2 Pro (Slow, Best Quality)</option>
+                            <option value="bytedance-seedance-v2.5">Seedance 2.5</option>
+                            <option value="minimax-h3-max">MiniMax H3 Max</option>
                           </select>
                           <p className="text-xs text-muted-foreground">
-                            {videoModel === "sora-2" ? "~$1.00/4sec, $2.00/8sec, $3.00/12sec" : (
-                              videoSize === "1792x1024" || videoSize === "1024x1792" 
-                                ? "~$5.00/4sec, $10.00/8sec, $15.00/12sec (wide)" 
-                                : "~$3.00/4sec, $6.00/8sec, $9.00/12sec"
-                            )}
+                            {VIDEO_MODELS[videoModel].description} {formatVideoPrice(videoModel, videoDuration)}
                           </p>
                         </div>
 
@@ -231,12 +243,16 @@ export default function NewDraftPage() {
                           <select
                             id="videoDuration"
                             value={videoDuration}
-                            onChange={(e) => setVideoDuration(Number(e.target.value) as 4 | 8 | 12)}
+                            onChange={(e) => setVideoDuration(resolveVideoDuration(videoModel, Number(e.target.value)))}
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                           >
-                            <option value={4}>4 seconds</option>
-                            <option value={8}>8 seconds</option>
-                            <option value={12}>12 seconds</option>
+                            {VIDEO_DURATIONS.filter((seconds) => seconds <= VIDEO_MODELS[videoModel].maxDuration).map(
+                              (seconds) => (
+                                <option key={seconds} value={seconds}>
+                                  {seconds} seconds
+                                </option>
+                              )
+                            )}
                           </select>
                         </div>
 
@@ -245,13 +261,14 @@ export default function NewDraftPage() {
                           <select
                             id="videoSize"
                             value={videoSize}
-                            onChange={(e) => setVideoSize(e.target.value as "1280x720" | "720x1280" | "1792x1024" | "1024x1792")}
+                            onChange={(e) => setVideoSize(resolveVideoAspect(e.target.value))}
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                           >
-                            <option value="1280x720">1280x720 - Landscape (16:9)</option>
-                            <option value="720x1280">720x1280 - Portrait (9:16)</option>
-                            <option value="1792x1024">1792x1024 - Wide Landscape</option>
-                            <option value="1024x1792">1024x1792 - Tall Portrait</option>
+                            {VIDEO_ASPECT_RATIOS.map((ratio) => (
+                              <option key={ratio} value={ratio}>
+                                {ratio}
+                              </option>
+                            ))}
                           </select>
                         </div>
 

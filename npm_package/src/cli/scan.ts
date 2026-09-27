@@ -11,10 +11,11 @@ interface ScanOptions {
   quiet?: boolean
   since?: string
   files?: string[]
+  all?: boolean
 }
 
 export async function scanCommand(options: ScanOptions = {}): Promise<void> {
-  const { quiet = false, since, files } = options
+  const { quiet = false, since, files, all = false } = options
 
   if (!quiet) {
     console.log(chalk.bold.blue("\n🔍 pubdev Scan\n"))
@@ -54,7 +55,13 @@ export async function scanCommand(options: ScanOptions = {}): Promise<void> {
     // Get file changes
     if (spinner) spinner.text = "Analyzing changes..."
     let changes
-    if (files && files.length > 0) {
+    if (all) {
+      changes = {
+        added: featureDetector.listAllFiles(config.scan?.paths, config.scan?.ignore),
+        modified: [],
+        deleted: [],
+      }
+    } else if (files && files.length > 0) {
       // Specific files provided
       changes = {
         added: files,
@@ -87,6 +94,9 @@ export async function scanCommand(options: ScanOptions = {}): Promise<void> {
     if (features.length === 0) {
       spinner?.warn(chalk.yellow("No features detected in changes"))
       console.log(chalk.dim("\nChanges found but no recognizable features."))
+      if (!all) {
+        console.log(chalk.dim("Scan every file under the configured paths with --all"))
+      }
       return
     }
 

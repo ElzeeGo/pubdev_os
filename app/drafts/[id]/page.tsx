@@ -214,7 +214,7 @@ export default async function DraftPage({ params }: DraftPageProps) {
             <Card>
               <CardHeader>
                 <CardTitle>Generated Videos</CardTitle>
-                <CardDescription>AI-generated videos with Sora 2</CardDescription>
+                <CardDescription>AI-generated videos</CardDescription>
               </CardHeader>
               <CardContent>
                 <VideoGallery videos={videos} />

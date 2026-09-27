@@ -1,10 +1,20 @@
-import OpenAI from "openai"
+import {
+  DEFAULT_VIDEO_MODEL,
+  resolveVideoAspect,
+  resolveVideoDuration,
+  resolveVideoModel,
+  VIDEO_MODELS,
+  type VideoAspectRatio,
+  type VideoModelId,
+} from "@/lib/llm/video-models"
+
+const ELEVENLABS_VIDEO_URL = "https://api.elevenlabs.io/v1/flows/video"
 
 export interface VideoGenerationInput {
   prompt: string
-  model: "sora-2" | "sora-2-pro"
-  duration: 4 | 8 | 12
-  size: "1280x720" | "720x1280" | "1792x1024" | "1024x1792"
+  model: VideoModelId | string
+  duration: number
+  size: VideoAspectRatio | string
   context?: {
     title?: string
     description?: string
@@ -17,7 +27,7 @@ export interface VideoAsset {
   url?: string
   status: "queued" | "in_progress" | "completed" | "failed"
   progress?: number
-  model: "sora-2" | "sora-2-pro"
+  model: VideoModelId
   duration: number
   size: string
   created_at: string
@@ -25,189 +35,226 @@ export interface VideoAsset {
   error?: string
 }
 
-/**
- * Generate a video using OpenAI Sora 2
- */
-export async function generateVideo(
-  input: VideoGenerationInput
-): Promise<VideoAsset> {
-  const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  })
+interface ElevenLabsGeneration {
+  id: string
+  status: "pending" | "generating" | "completed" | "failed"
+  content_url?: string
+  error_message?: string
+  failure_reason?: string
+}
 
-  try {
-    // Start video generation
-    const video = await openai.videos.create({
-      model: input.model,
-      prompt: input.prompt,
-      size: input.size as any, // Cast to any - OpenAI SDK type definitions may be outdated
-      seconds: input.duration.toString() as "4" | "8" | "12",
-    })
+function elevenLabsHeaders(): HeadersInit {
+  const apiKey = process.env.ELEVENLABS_API_KEY
+  if (!apiKey) {
+    throw new Error("ELEVENLABS_API_KEY is not set")
+  }
 
-    return {
-      id: video.id,
-      prompt: input.prompt,
-      status: (video.status as any) || "queued",
-      progress: video.progress,
-      model: input.model,
-      duration: input.duration,
-      size: input.size,
-      created_at: new Date(video.created_at * 1000).toISOString(),
-    }
-  } catch (error) {
-    console.error("[pudbdev] Error starting video generation:", error)
-    throw error
+  return {
+    "xi-api-key": apiKey,
+    "Content-Type": "application/json",
   }
 }
 
+async function readElevenLabsError(response: Response): Promise<string> {
+  const body = await response.text()
+  try {
+    const parsed = JSON.parse(body) as { detail?: unknown }
+    const detail = parsed.detail
+    if (typeof detail === "string") return detail
+    if (Array.isArray(detail)) {
+      const message = detail
+        .map((item) => {
+          if (item && typeof item === "object" && "msg" in item) return String(item.msg)
+          return ""
+        })
+        .filter(Boolean)
+        .join("; ")
+      if (message) return message
+    }
+    if (detail && typeof detail === "object" && "message" in detail) {
+      return String((detail as { message: unknown }).message)
+    }
+  } catch {
+    // Fall through to the raw body.
+  }
+
+  return body.slice(0, 400) || response.statusText
+}
+
+function mapStatus(status: ElevenLabsGeneration["status"]): VideoAsset["status"] {
+  if (status === "pending") return "queued"
+  if (status === "generating") return "in_progress"
+  if (status === "completed") return "completed"
+  return "failed"
+}
+
+function toVideoAsset(
+  generation: ElevenLabsGeneration,
+  input: { prompt: string; model: VideoModelId; duration: number; size: string }
+): VideoAsset {
+  const asset: VideoAsset = {
+    id: generation.id,
+    prompt: input.prompt,
+    status: mapStatus(generation.status),
+    model: input.model,
+    duration: input.duration,
+    size: input.size,
+    created_at: new Date().toISOString(),
+  }
+
+  if (generation.status === "failed") {
+    asset.error = generation.error_message || generation.failure_reason || "Video generation failed"
+  }
+
+  if (generation.content_url) asset.url = generation.content_url
+
+  return asset
+}
+
 /**
- * Poll video status
+ * Start a video generation on ElevenLabs.
+ * Seedance 2.5 is the default. MiniMax H3 Max is the faster, cheaper option.
  */
+export async function generateVideo(input: VideoGenerationInput): Promise<VideoAsset> {
+  const model = resolveVideoModel(input.model)
+  const spec = VIDEO_MODELS[model]
+  const duration = resolveVideoDuration(model, input.duration)
+  const aspectRatio = resolveVideoAspect(input.size)
+
+  const response = await fetch(ELEVENLABS_VIDEO_URL, {
+    method: "POST",
+    headers: elevenLabsHeaders(),
+    body: JSON.stringify({
+      model_id: model,
+      prompt: input.prompt,
+      duration_secs: duration,
+      aspect_ratio: aspectRatio,
+      resolution: spec.resolution,
+      generate_audio: true,
+    }),
+  })
+
+  if (!response.ok) {
+    const message = await readElevenLabsError(response)
+    if (model === "minimax-h3-max" && message.includes("does not match any of the expected tags")) {
+      throw new Error(
+        "MiniMax H3 Max is not available on the ElevenLabs video API yet. Use Seedance 2.5."
+      )
+    }
+    throw new Error(message)
+  }
+
+  const generation = (await response.json()) as ElevenLabsGeneration
+
+  return toVideoAsset(generation, {
+    prompt: input.prompt,
+    model,
+    duration,
+    size: aspectRatio,
+  })
+}
+
 export async function pollVideoStatus(videoId: string): Promise<VideoAsset> {
-  const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+  const response = await fetch(`${ELEVENLABS_VIDEO_URL}/${videoId}`, {
+    headers: elevenLabsHeaders(),
   })
 
-  try {
-    const video = await openai.videos.retrieve(videoId)
-
-    const asset: VideoAsset = {
-      id: video.id,
-      prompt: "", // We don't get prompt back from retrieve
-      status: (video.status as any) || "queued",
-      progress: video.progress,
-      model: (video.model as any) || "sora-2",
-      duration: parseInt(video.seconds || "4"),
-      size: video.size || "1280x720",
-      created_at: new Date(video.created_at * 1000).toISOString(),
-    }
-
-    // Capture error message if video failed
-    if (video.status === "failed" && (video as any).error) {
-      asset.error = (video as any).error.message || "Video generation failed"
-    }
-
-    return asset
-  } catch (error) {
-    console.error("[pudbdev] Error polling video status:", error)
-    throw error
+  if (!response.ok) {
+    throw new Error(await readElevenLabsError(response))
   }
-}
 
-/**
- * Download completed video
- */
-export async function downloadVideo(
-  videoId: string
-): Promise<{ buffer: Buffer; url: string }> {
-  const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+  const generation = (await response.json()) as ElevenLabsGeneration
+
+  return toVideoAsset(generation, {
+    prompt: "",
+    model: DEFAULT_VIDEO_MODEL,
+    duration: 0,
+    size: "",
   })
-
-  try {
-    const content = await openai.videos.downloadContent(videoId)
-    const arrayBuffer = await content.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-
-    // Convert to data URL for immediate use
-    // In production, you'd upload to Supabase Storage
-    const base64 = buffer.toString("base64")
-    const url = `data:video/mp4;base64,${base64}`
-
-    return { buffer, url }
-  } catch (error) {
-    console.error("[pudbdev] Error downloading video:", error)
-    throw error
-  }
 }
 
-/**
- * Create and poll until completion (convenience function)
- */
+export async function downloadVideo(videoId: string): Promise<{ buffer: Buffer; url: string }> {
+  const video = await pollVideoStatus(videoId)
+  if (!video.url) {
+    throw new Error("Video is not ready to download")
+  }
+
+  const response = await fetch(video.url)
+  if (!response.ok) {
+    throw new Error("Failed to download the generated video")
+  }
+
+  const buffer = Buffer.from(await response.arrayBuffer())
+  const url = `data:video/mp4;base64,${buffer.toString("base64")}`
+  return { buffer, url }
+}
+
 export async function createAndPollVideo(
   input: VideoGenerationInput,
   onProgress?: (progress: number, status: string) => void
 ): Promise<VideoAsset> {
   try {
-    // Start generation
-    const initialVideo = await generateVideo(input)
+    let video = await generateVideo(input)
 
-    // Poll until complete
-    let video = initialVideo
     while (video.status === "queued" || video.status === "in_progress") {
-      // Wait 5 seconds before checking again
-      await new Promise((resolve) => setTimeout(resolve, 5000))
-
-      video = await pollVideoStatus(video.id)
-
-      if (onProgress && video.progress !== undefined) {
-        onProgress(video.progress, video.status)
+      await new Promise((resolve) => setTimeout(resolve, 10000))
+      const polled = await pollVideoStatus(video.id)
+      video = {
+        ...polled,
+        prompt: input.prompt,
+        model: video.model,
+        duration: video.duration,
+        size: video.size,
       }
+
+      if (onProgress) onProgress(video.progress ?? 0, video.status)
     }
 
-    // If completed, download the video
     if (video.status === "completed") {
       const { url } = await downloadVideo(video.id)
       video.url = url
       video.completed_at = new Date().toISOString()
-    } else if (video.status === "failed") {
-      // Video failed on OpenAI's side
-      video.error = video.error || "Video generation failed on OpenAI's servers"
     }
 
     return video
   } catch (error) {
-    // If there's an error during the process, return a failed video object
-    console.error("[pudbdev] Error in createAndPollVideo:", error)
+    console.error("[pubdev] Error in createAndPollVideo:", error)
+    const model = resolveVideoModel(input.model)
     return {
       id: "error",
       prompt: input.prompt,
       status: "failed",
-      model: input.model,
-      duration: input.duration,
-      size: input.size,
+      model,
+      duration: resolveVideoDuration(model, input.duration),
+      size: resolveVideoAspect(input.size),
       created_at: new Date().toISOString(),
       error: error instanceof Error ? error.message : "Failed to generate video",
     }
   }
 }
 
-/**
- * Build a video prompt from context
- */
 export function buildVideoPrompt(context: {
   title?: string
   description?: string
   changes?: string[]
   videoStyle?: string
 }): string {
-  // If videoStyle contains detailed template instructions (long style), use it directly
   const hasDetailedStyle = context.videoStyle && context.videoStyle.length > 200
-  
+
   if (hasDetailedStyle) {
-    // Use the full template instructions as-is, with minimal context
     let prompt = ""
-    
-    if (context.title) {
-      prompt += `Feature: ${context.title}. `
-    }
-    
+
+    if (context.title) prompt += `Feature: ${context.title}. `
     if (context.description && context.description !== context.title) {
       prompt += `${context.description}. `
     }
-    
-    // Add the full style template
     prompt += context.videoStyle
-    
+
     return prompt.trim()
   }
-  
-  // For short/simple styles, build a descriptive prompt
+
   let prompt = ""
 
-  // Build a visual description instead of asking for text overlays
-  // Sora struggles with text generation, so focus on visuals
-  
   if (context.title || context.description) {
     const subject = context.title || context.description || "a product announcement"
     prompt += `A dynamic promotional video showcasing ${subject}. `
@@ -221,10 +268,8 @@ export function buildVideoPrompt(context: {
     prompt += `Featuring: ${context.changes.slice(0, 3).join(", ")}. `
   }
 
-  // Add style guidelines
   const style = context.videoStyle || "modern, professional, clean design"
   prompt += `Visual style: ${style}. Smooth camera motion, professional lighting, engaging composition.`
 
   return prompt.trim()
 }
-

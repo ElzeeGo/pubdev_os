@@ -23,7 +23,7 @@ export function Pricing() {
           </div>
           <h2 className="text-4xl md:text-5xl font-bold mb-6 text-balance">Simple, usage-based pricing</h2>
           <p className="text-lg text-muted-foreground mb-8 leading-relaxed max-w-3xl mx-auto">
-            Only pay for what you use. Powered by GPT-5, Gemini Flash, and Sora 2. No subscriptions, no hidden fees. Credits never expire.
+            Only pay for what you use. Powered by GPT-5, Gemini Flash, and ElevenLabs video. No subscriptions, no hidden fees. Credits never expire.
           </p>
         </div>
 

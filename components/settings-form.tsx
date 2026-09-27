@@ -15,6 +15,18 @@ import {
 } from "@/components/ui/select"
 import { VideoStyleTemplates } from "@/components/video-style-templates"
 import { ImageStyleTemplates } from "@/components/image-style-templates"
+import {
+  DEFAULT_VIDEO_MODEL,
+  formatVideoPrice,
+  resolveVideoAspect,
+  resolveVideoDuration,
+  resolveVideoModel,
+  VIDEO_ASPECT_RATIOS,
+  VIDEO_DURATIONS,
+  VIDEO_MODELS,
+  type VideoAspectRatio,
+  type VideoModelId,
+} from "@/lib/llm/video-models"
 import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 
@@ -29,9 +41,9 @@ interface SettingsFormProps {
       generateImages?: boolean
       imageStyle?: string
       generateVideos?: boolean
-      videoModel?: "sora-2" | "sora-2-pro"
-      videoDuration?: 4 | 8 | 12
-      videoSize?: "1280x720" | "720x1280" | "1792x1024" | "1024x1792"
+      videoModel?: string
+      videoDuration?: number
+      videoSize?: string
       videoStyle?: string
     }
   }
@@ -50,14 +62,17 @@ export function SettingsForm({ user }: SettingsFormProps) {
     user.settings.imageStyle || "modern and minimalist, vibrant colors, tech-focused. Clean composition with clear visual hierarchy. Soft lighting, no harsh shadows. Cool color palette with one accent color. Sans-serif typography (Inter/SF). Focused on the product/feature. White or neutral background. Simple geometric shapes. High contrast for readability. Professional and polished. Output: 1920×1080 or 2048×2048, PNG."
   )
   const [generateVideos, setGenerateVideos] = useState(user.settings.generateVideos || false)
-  const [videoModel, setVideoModel] = useState<"sora-2" | "sora-2-pro">(
-    user.settings.videoModel || "sora-2"
+  const [videoModel, setVideoModel] = useState<VideoModelId>(
+    resolveVideoModel(user.settings.videoModel || DEFAULT_VIDEO_MODEL)
   )
-  const [videoDuration, setVideoDuration] = useState<4 | 8 | 12>(
-    user.settings.videoDuration || 4
+  const [videoDuration, setVideoDuration] = useState(
+    resolveVideoDuration(
+      resolveVideoModel(user.settings.videoModel || DEFAULT_VIDEO_MODEL),
+      user.settings.videoDuration || 5
+    )
   )
-  const [videoSize, setVideoSize] = useState<"1280x720" | "720x1280" | "1792x1024" | "1024x1792">(
-    user.settings.videoSize || "1280x720"
+  const [videoSize, setVideoSize] = useState<VideoAspectRatio>(
+    resolveVideoAspect(user.settings.videoSize)
   )
   const [videoStyle, setVideoStyle] = useState(
     user.settings.videoStyle || "Style: modern, clean UI, focus on clarity. Shots: intro logo bumper (0–2s), feature overview (2–8s), step-by-step demo (8–22s), closing CTA (22–30s). Camera: slow dolly-ins and parallax pans; keep motion subtle and continuous. Edits: smooth match cuts and 8–12 frame crossfades; occasional whip-pan transition between sections. Lighting: soft three-point lighting; key at 45°, soft fill, gentle rim; neutral HDRI reflections for UI mockups. Color: cool neutrals with one accent color; mild filmic contrast. Graphics: tasteful UI overlays and callouts with short labels (<6 words). Text: title safe area; high contrast; font 'Inter' or similar. Music/SFX: light tech ambient bed; soft UI click and whoosh cues; use J/L-cuts for continuity. Framing: 16:9 4K (3840×2160), 24 fps, 180° shutter look (natural motion blur). Avoid: jittery zooms, harsh spotlights, fast cuts under 8 frames, busy backgrounds."
@@ -224,8 +239,8 @@ export function SettingsForm({ user }: SettingsFormProps) {
       {/* Video Generation Settings */}
       <Card className="lg:col-span-2">
         <CardHeader>
-          <CardTitle>Video Generation with Sora 2</CardTitle>
-          <CardDescription>Configure AI video generation for your posts</CardDescription>
+          <CardTitle>Video Generation</CardTitle>
+          <CardDescription>Generate clips with ElevenLabs. Seedance 2.5 is the default.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center space-x-2">
@@ -245,49 +260,60 @@ export function SettingsForm({ user }: SettingsFormProps) {
             <div className="space-y-4">
               <div className="grid gap-2">
                 <Label htmlFor="videoModel">Video Model</Label>
-                <Select value={videoModel} onValueChange={(v) => setVideoModel(v as "sora-2" | "sora-2-pro")}>
+                <Select
+                  value={videoModel}
+                  onValueChange={(value) => {
+                    const nextModel = resolveVideoModel(value)
+                    setVideoModel(nextModel)
+                    setVideoDuration(resolveVideoDuration(nextModel, videoDuration))
+                  }}
+                >
                   <SelectTrigger id="videoModel">
                     <SelectValue placeholder="Select model" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="sora-2">Sora 2 (Fast, Good Quality)</SelectItem>
-                    <SelectItem value="sora-2-pro">Sora 2 Pro (Slow, Best Quality)</SelectItem>
+                    <SelectItem value="bytedance-seedance-v2.5">Seedance 2.5</SelectItem>
+                    <SelectItem value="minimax-h3-max">MiniMax H3 Max</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  {videoModel === "sora-2" ? "$0.25/sec (~$1.00 for 4 sec)" : (
-                    videoSize === "1792x1024" || videoSize === "1024x1792"
-                      ? "$1.25/sec (~$5.00 for 4 sec, wide format)"
-                      : "$0.75/sec (~$3.00 for 4 sec)"
-                  )}
+                  {VIDEO_MODELS[videoModel].description} {formatVideoPrice(videoModel, videoDuration)}
                 </p>
               </div>
 
               <div className="grid gap-2">
                 <Label htmlFor="videoDuration">Default Duration</Label>
-                <Select value={videoDuration.toString()} onValueChange={(v) => setVideoDuration(Number(v) as 4 | 8 | 12)}>
+                <Select
+                  value={videoDuration.toString()}
+                  onValueChange={(value) => setVideoDuration(resolveVideoDuration(videoModel, Number(value)))}
+                >
                   <SelectTrigger id="videoDuration">
                     <SelectValue placeholder="Select duration" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="4">4 seconds</SelectItem>
-                    <SelectItem value="8">8 seconds</SelectItem>
-                    <SelectItem value="12">12 seconds</SelectItem>
+                    {VIDEO_DURATIONS.filter((seconds) => seconds <= VIDEO_MODELS[videoModel].maxDuration).map(
+                      (seconds) => (
+                        <SelectItem key={seconds} value={seconds.toString()}>
+                          {seconds} seconds
+                        </SelectItem>
+                      )
+                    )}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="grid gap-2">
                 <Label htmlFor="videoSize">Default Format</Label>
-                <Select value={videoSize} onValueChange={(v) => setVideoSize(v as "1280x720" | "720x1280" | "1792x1024" | "1024x1792")}>
+                <Select value={videoSize} onValueChange={(value) => setVideoSize(resolveVideoAspect(value))}>
                   <SelectTrigger id="videoSize">
                     <SelectValue placeholder="Select format" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1280x720">1280x720 - Landscape (16:9)</SelectItem>
-                    <SelectItem value="720x1280">720x1280 - Portrait (9:16)</SelectItem>
-                    <SelectItem value="1792x1024">1792x1024 - Wide Landscape</SelectItem>
-                    <SelectItem value="1024x1792">1024x1792 - Tall Portrait</SelectItem>
+                    {VIDEO_ASPECT_RATIOS.map((ratio) => (
+                      <SelectItem key={ratio} value={ratio}>
+                        {ratio}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -300,8 +326,8 @@ export function SettingsForm({ user }: SettingsFormProps) {
               <div className="rounded-lg bg-blue-50 p-3 text-sm">
                 <p className="font-medium text-blue-900">💡 Video Generation Tips</p>
                 <ul className="mt-2 space-y-1 text-blue-800">
-                  <li>• Videos take 2-5 minutes to generate</li>
-                  <li>• Sora 2 Pro produces higher quality but costs more</li>
+                  <li>• Seedance 2.5 is the default and costs more than MiniMax H3 Max</li>
+                  <li>• MiniMax H3 Max is the faster, cheaper model</li>
                   <li>• Longer videos cost proportionally more</li>
                 </ul>
               </div>

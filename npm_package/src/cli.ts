@@ -28,6 +28,7 @@ program
   .option("-q, --quiet", "Suppress output")
   .option("-s, --since <commit>", "Compare changes since a specific commit")
   .option("-f, --files <files...>", "Scan specific files")
+  .option("-a, --all", "Scan every file under the configured paths")
   .action(async (options) => {
     try {
       await scanCommand(options)
